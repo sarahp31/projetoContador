@@ -208,10 +208,8 @@ STA @510            #Limpa FF da KEY1
 LDA @320            #Armazena o valor lido nas chaves (ler SW0~SW7)
 ANDI $15            #Mascara para limpar valor
 
-#Vê se valor da chave é maior que 10
-JSR @CHECK_LIMIT
-
-STA @6
+JSR @CHECK_LIMIT    #Vê se valor da chave é maior que 10
+STA @6              #Armazena o valor do acumulador nas unidades do limite
 
 #Carrega valor no display
 STA @288
@@ -228,8 +226,8 @@ JEQ @SET_DEZENA     #KEY1 nao foi apertado então faz o desvio (fica esperando)
 STA @510            #Limpando FF do KEY1
 LDA @320            #Armazena o valor lido nas chaves (ler SW0~SW7)
 ANDI $15            #Mascara para limpar valor
-#Vê se valor da chave é maior que 10
-JSR @CHECK_LIMIT
+
+JSR @CHECK_LIMIT    #Vê se valor da chave é maior que 10
 STA @7              #Armazena o valor do acumulador no espaco das dezenas do limite
 
 #Carrega valor no display
@@ -247,8 +245,8 @@ JEQ @SET_CENTENA    #KEY1 nao foi apertado então faz o desvio (fica esperando)
 STA @510            #Limpando FF do KEY1
 LDA @320            #Armazena o valor lido nas chaves (ler SW0~SW7)
 ANDI $15            #Mascara para limpar valor
-#Vê se valor da chave é maior que 10
-JSR @CHECK_LIMIT
+
+JSR @CHECK_LIMIT    #Vê se valor da chave é maior que 10
 STA @8              #Armazena o valor do acumulador no espaco das centenas do limite
 
 #Carrega valor no display
@@ -266,8 +264,8 @@ JEQ @SET_MILHAR     #KEY1 nao foi apertado então faz o desvio (fica esperando)
 STA @510            #Limpando FF do KEY11
 LDA @320            #Armazena o valor lido nas chaves (ler SW0~SW7)
 ANDI $15            #Mascara para limpar valor
-#Vê se valor da chave é maior que 10
-JSR @CHECK_LIMIT
+
+JSR @CHECK_LIMIT    #Vê se valor da chave é maior que 10
 STA @9              #Armazena o valor do acumulador no espaco das milhares do limite
 
 #Carrega valor no display
@@ -285,8 +283,8 @@ JEQ @SET_DEZMILHAR  #KEY1 nao foi apertado então faz o desvio (fica esperando)
 STA @510            #Limpando FF do KEY1
 LDA @320            #Armazena o valor lido nas chaves (ler SW0~SW7)
 ANDI $15            #Mascara para limpar valor
-#Vê se valor da chave é maior que 10
-JSR @CHECK_LIMIT
+
+JSR @CHECK_LIMIT    #Vê se valor da chave é maior que 10
 STA @10             #Armazena o valor do acumulador no espaco das dezenas de milhares do limite
 
 #Carrega valor no display
@@ -304,8 +302,8 @@ JEQ @SET_CENMILHAR  #KEY1 nao foi apertado então faz o desvio (fica esperando)
 STA @510            #Limpando FF do KEY1
 LDA @320            #Armazena o valor lido nas chaves (ler SW0~SW7)
 ANDI $15            #Mascara para limpar valor
-#Vê se valor da chave é maior que 10
-JSR @CHECK_LIMIT
+
+JSR @CHECK_LIMIT    #Vê se valor da chave é maior que 10
 STA @11             #Armazena o valor do acumulador no espaco das centenas de milhares do limite
 
 #Carrega valor no display
