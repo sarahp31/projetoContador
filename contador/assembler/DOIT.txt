@@ -78,20 +78,21 @@ JSR @INCREMENTA         # Se for apertado (KEY0=1), pula pra INCREMENTA
 
 CHECK_KEY1:
 # Ler o botão de configuração do limite de incremento (KEY1):
-LDA @353
-ANDI $1
+LDA @353                # Lê KEY1
+ANDI $1                 # Limpa KEY1
 # Caso não esteja pressionado, verifica FPGA_RESET
-CEQ @13
-JEQ @CHECK_RESET
+CEQ @13                 # Compara valor com 0 (MEM[13])
+JEQ @CHECK_RESET        # Caso não tenha sido apertado, checa FPGA_RESET
 # Caso esteja pressionado, vai para sub-rotina de checar limite
-JMP @SET_LIMIT
+JMP @SET_LIMIT          # Se for apertado (KEY1=1), pula pra SET_LIMIT
+
 CHECK_RESET:
 # Ler o botão de reiniciar contagem (FPGA_RESET):
-LDA @356
-ANDI $1
+LDA @356                # Lê FPG_RESET
+ANDI $1                 # Limpa FPG_RESET
 # Caso esteja pressionado, desviar para a sub-rotina de reiniciar contagem.
-CEQ @13
-JEQ @SETUP
+CEQ @13                 # Compara valor com 0 (MEM[13])
+JEQ @SETUP              # Pula para fazer o setup novamente
 
 # Escrever os valores das variáveis nos respectivos displays (pode ser uma sub-rotina).
 JSR @DISPLAY
