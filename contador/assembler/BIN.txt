@@ -1,0 +1,329 @@
+--# Setup
+tmp(0) := "0000000000000";	-- NOP 	#SETUP
+--# Zerando os displays de sete segmentos
+tmp(1) := "0100000000000";	-- LDI $0      	#Carrega o acumulador com o valor 0
+tmp(2) := "0101100100000";	-- STA @288    	#Armazena o valor do acumulador em HEX0
+tmp(3) := "0101100100001";	-- STA @289    	#Armazena o valor do acumulador em HEX1
+tmp(4) := "0101100100010";	-- STA @290    	#Armazena o valor do acumulador em HEX2
+tmp(5) := "0101100100011";	-- STA @291    	#Armazena o valor do acumulador em HEX3
+tmp(6) := "0101100100100";	-- STA @292    	#Armazena o valor do acumulador em HEX4
+tmp(7) := "0101100100101";	-- STA @293    	#Armazena o valor do acumulador em HEX5
+--#Limpar os botoes (rst do FF)
+tmp(8) := "0101111111111";	-- STA @511   	#Limpando FF do KEY0
+tmp(9) := "0101111111110";	-- STA @510   	#Limpando FF do KEY1
+tmp(10) := "0101111111101";	-- STA @509   	#Limpando FF do KEY2
+tmp(11) := "0101111111100";	-- STA @508   	#Limpando FF do KEY3
+--#Inicializando as variaveis do display
+tmp(12) := "0101000000000";	-- STA @0     	#Armazena o valor do acumulador em MEM[0] (unidades)
+tmp(13) := "0101000000001";	-- STA @1     	#Armazena o valor do acumulador em MEM[1] (dezenas)
+tmp(14) := "0101000000010";	-- STA @2     	#Armazena o valor do acumulador em MEM[2] (centenas)
+tmp(15) := "0101000000011";	-- STA @3     	#Armazena o valor do acumulador em MEM[3] (milhares)
+tmp(16) := "0101000000100";	-- STA @4     	#Armazena o valor do acumulador em MEM[4] (dezenas de milhares)
+tmp(17) := "0101000000101";	-- STA @5     	#Armazena o valor do acumulador em MEM[5] (centenas de milhares)
+--#Setando a flag de contagem
+tmp(18) := "0101000001111";	-- STA @15   	#Armazena o valor do acumulador em MEM[15] (flag)
+--#Apagando os LEDs
+tmp(19) := "0101100000001";	-- STA @257    	#Armazena o valor do bit0 do acumulador no LDR8 (indica Overflow)
+tmp(20) := "0101100000010";	-- STA @258    	#Armazena o valor do bit0 do acumulador no LDR9 (indica Limite Atingido)
+tmp(21) := "0100000000001";	-- LDI $1     
+tmp(22) := "0101100000000";	-- STA @256    	#Armazena o valor do acumulador no LDR0 ~ LDR7
+--#Inicializando as variaveis do limite
+tmp(23) := "0100000001001";	-- LDI $9     	#Carrega o acumulador com o valor 9
+tmp(24) := "0101000000110";	-- STA @6     	#Armazena o valor do acumulador em MEM[6] (unidades)
+tmp(25) := "0101000000111";	-- STA @7     	#Armazena o valor do acumulador em MEM[7] (dezenas)
+tmp(26) := "0101000001000";	-- STA @8     	#Armazena o valor do acumulador em MEM[8] (centenas)
+tmp(27) := "0101000001001";	-- STA @9     	#Armazena o valor do acumulador em MEM[9] (milhares)
+tmp(28) := "0101000001010";	-- STA @10    	#Armazena o valor do acumulador em MEM[10] (dezenas de milhares)
+tmp(29) := "0101000001011";	-- STA @11    	#Armazena o valor do acumulador em MEM[11] (centenas de milhares)
+--#Salvando variaveis utilizadas em comparacoes
+tmp(30) := "0100000001010";	-- LDI $10    	#Carrega o acumulador com o valor 10 para fzer incrementos
+tmp(31) := "0101000001100";	-- STA @12    	#Armazena o valor do acumulador em MEM[12] (valor para comparacao limite da faixa a ser exibida)
+tmp(32) := "0100000000000";	-- LDI $0     	#Carrega o acumulador com o valor 0 para fazer comparacao com o botao
+tmp(33) := "0101000001101";	-- STA @13    	#Armazena o valor do acumulador em MEM[13] (valor para comparacao do aperto do botao)
+tmp(34) := "0100000000001";	-- LDI $1     	#Carrega o acumulador com o valor 1 para fazer comparacao com o botao
+tmp(35) := "0101000001110";	-- STA @14    	#Armazena o valor do acumulador em MEM[14] (valor para comparacao do aperto do botao)
+--# Armazena 10 em MEM[16]
+tmp(36) := "0100000001010";	-- LDI $10
+tmp(37) := "0101000010000";	-- STA @16
+--# Armazena 11 em MEM[17]
+tmp(38) := "0100000001011";	-- LDI $11
+tmp(39) := "0101000010001";	-- STA @17
+--# Armazena 12 em MEM[18]
+tmp(40) := "0100000001100";	-- LDI $12
+tmp(41) := "0101000010010";	-- STA @18
+--# Armazena 13 em MEM[19]
+tmp(42) := "0100000001101";	-- LDI $13
+tmp(43) := "0101000010011";	-- STA @19
+--# Armazena 14 em MEM[20]
+tmp(44) := "0100000001110";	-- LDI $14
+tmp(45) := "0101000010100";	-- STA @20
+--# Armazena 15 em MEM[21]
+tmp(46) := "0100000001111";	-- LDI $15
+tmp(47) := "0101000010101";	-- STA @21
+tmp(48) := "0000000000000";	-- NOP 	#INICIO
+--# Ler o botão de incremento de contagem (KEY0):
+tmp(49) := "0001101100000";	-- LDA @352                	# Lê KEY0
+tmp(50) := "1011000000001";	-- ANDI $1                 	# Limpa KEY0
+--# Caso tenha sido pressionado, desviar para a sub-rotina de incremento de valor.
+tmp(51) := "1000000001101";	-- CEQ @13                 	# Compara valor com 0 (MEM[13])
+tmp(52) := "0111000110110";	-- JEQ @CHECK_KEY1         	# Caso não tenha sido apertado, checa KEY1
+tmp(53) := "1001001010010";	-- JSR @INCREMENTA         	# Se for apertado (KEY0=1), pula pra INCREMENTA
+tmp(54) := "0000000000000";	-- NOP 	#CHECK_KEY1
+--# Ler o botão de configuração do limite de incremento (KEY1):
+tmp(55) := "0001101100001";	-- LDA @353
+tmp(56) := "1011000000001";	-- ANDI $1
+--# Caso não esteja pressionado, verifica FPGA_RESET
+tmp(57) := "1000000001101";	-- CEQ @13
+tmp(58) := "0111000111100";	-- JEQ @CHECK_RESET
+--# Caso esteja pressionado, vai para sub-rotina de checar limite
+tmp(59) := "0110010001111";	-- JMP @SET_LIMIT
+tmp(60) := "0000000000000";	-- NOP 	#CHECK_RESET
+--# Ler o botão de reiniciar contagem (FPGA_RESET):
+tmp(61) := "0001101100100";	-- LDA @356
+tmp(62) := "1011000000001";	-- ANDI $1
+--# Caso esteja pressionado, desviar para a sub-rotina de reiniciar contagem.
+tmp(63) := "1000000001101";	-- CEQ @13
+tmp(64) := "0111000000000";	-- JEQ @SETUP
+--# Escrever os valores das variáveis nos respectivos displays (pode ser uma sub-rotina).
+tmp(65) := "1001001000100";	-- JSR @DISPLAY
+tmp(66) := "1001011101100";	-- JSR @VERIFICA_LIMITE
+--# Desviar para o **INÍCIO**.
+tmp(67) := "0110000110000";	-- JMP @INICIO
+--# -----------------------------------------------------
+--# SUBROTINAS
+tmp(68) := "0000000000000";	-- NOP 	#DISPLAY
+--# Carrega valor de memória de cada unidade
+--# e os mostra no display
+tmp(69) := "0001000000000";	-- LDA @0                  
+tmp(70) := "0101100100000";	-- STA @288
+tmp(71) := "0001000000001";	-- LDA @1
+tmp(72) := "0101100100001";	-- STA @289
+tmp(73) := "0001000000010";	-- LDA @2                  
+tmp(74) := "0101100100010";	-- STA @290
+tmp(75) := "0001000000011";	-- LDA @3                  
+tmp(76) := "0101100100011";	-- STA @291
+tmp(77) := "0001000000100";	-- LDA @4                 
+tmp(78) := "0101100100100";	-- STA @292
+tmp(79) := "0001000000101";	-- LDA @5 
+tmp(80) := "0101100100101";	-- STA @293
+tmp(81) := "1010000000000";	-- RET
+tmp(82) := "0000000000000";	-- NOP 	#INCREMENTA
+tmp(83) := "0101111111111";	-- STA @511                	# Limpa FF de KEY0
+--# Verificando flag inibição de contagem
+tmp(84) := "0001000001111";	-- LDA @15                 	#Carrega valor flag
+tmp(85) := "1000000001110";	-- CEQ @14                 	#Compara com 1  (FALSE)
+tmp(86) := "0111000110000";	-- JEQ @INICIO
+--#INC_UNIDADE:
+tmp(87) := "0001000000000";	-- LDA @0                  	# Carrega valor das unidades
+tmp(88) := "1100000000000";	-- INC                     	# Incrementa valor
+--# Checa se ultrapassou 10
+tmp(89) := "1000000001100";	-- CEQ @12
+tmp(90) := "0111001011101";	-- JEQ @INC_DEZENA
+--# Caso contrário, carrega novo valor
+tmp(91) := "0101000000000";	-- STA @0                  	# Carrega novo valor da unidade (MEM[0])
+tmp(92) := "1010000000000";	-- RET
+tmp(93) := "0000000000000";	-- NOP 	#INC_DEZENA
+--# Reseta valor da unidade
+tmp(94) := "0100000000000";	-- LDI $0
+tmp(95) := "0101000000000";	-- STA @0
+tmp(96) := "0001000000001";	-- LDA @1
+tmp(97) := "1100000000000";	-- INC
+tmp(98) := "1000000001100";	-- CEQ @12
+tmp(99) := "0111001100110";	-- JEQ @INC_CENTENA
+tmp(100) := "0101000000001";	-- STA @1
+tmp(101) := "1010000000000";	-- RET
+tmp(102) := "0000000000000";	-- NOP 	#INC_CENTENA
+--# Reseta valor da unidade
+tmp(103) := "0100000000000";	-- LDI $0
+tmp(104) := "0101000000001";	-- STA @1
+tmp(105) := "0001000000010";	-- LDA @2
+tmp(106) := "1100000000000";	-- INC
+tmp(107) := "1000000001100";	-- CEQ @12
+tmp(108) := "0111001101111";	-- JEQ @INC_MILHAR
+tmp(109) := "0101000000010";	-- STA @2
+tmp(110) := "1010000000000";	-- RET
+tmp(111) := "0000000000000";	-- NOP 	#INC_MILHAR
+--# Reseta valor da unidade
+tmp(112) := "0100000000000";	-- LDI $0
+tmp(113) := "0101000000010";	-- STA @2
+tmp(114) := "0001000000011";	-- LDA @3
+tmp(115) := "1100000000000";	-- INC
+tmp(116) := "1000000001100";	-- CEQ @12
+tmp(117) := "0111001111000";	-- JEQ @INC_DEZ_MILHAR
+tmp(118) := "0101000000011";	-- STA @3
+tmp(119) := "1010000000000";	-- RET
+tmp(120) := "0000000000000";	-- NOP 	#INC_DEZ_MILHAR
+--# Reseta valor da unidade
+tmp(121) := "0100000000000";	-- LDI $0
+tmp(122) := "0101000000011";	-- STA @3
+tmp(123) := "0001000000100";	-- LDA @4
+tmp(124) := "1100000000000";	-- INC
+tmp(125) := "1000000001100";	-- CEQ @12
+tmp(126) := "0111010000001";	-- JEQ @INC_CEN_MILHAR
+tmp(127) := "0101000000100";	-- STA @4
+tmp(128) := "1010000000000";	-- RET
+tmp(129) := "0000000000000";	-- NOP 	#INC_CEN_MILHAR
+--# Reseta valor da unidade
+tmp(130) := "0100000000000";	-- LDI $0
+tmp(131) := "0101000000100";	-- STA @4
+tmp(132) := "0001000000101";	-- LDA @5
+tmp(133) := "1100000000000";	-- INC
+tmp(134) := "1000000001100";	-- CEQ @12
+tmp(135) := "0111010001010";	-- JEQ @OVERFLOW
+tmp(136) := "0101000000101";	-- STA @5
+tmp(137) := "1010000000000";	-- RET
+tmp(138) := "0000000000000";	-- NOP 	#OVERFLOW
+tmp(139) := "0100000000001";	-- LDI $1
+tmp(140) := "0101000001111";	-- STA @15
+tmp(141) := "0001100000001";	-- LDA @257
+tmp(142) := "1010000000000";	-- RET
+tmp(143) := "0000000000000";	-- NOP 	#SET_LIMIT
+--#Setando limite (unidade):
+tmp(144) := "0101111111110";	-- STA @510            	#Limpa FF da KEY1
+tmp(145) := "0001101000000";	-- LDA @320            	#Armazena o valor lido nas chaves (ler SW0~SW7)
+tmp(146) := "1011000001111";	-- ANDI $15            	#Mascara para limpar valor
+--#Vê se valor da chave é maior que 10
+tmp(147) := "1001011011010";	-- JSR @CHECK_LIMIT
+tmp(148) := "0101000000110";	-- STA @6
+--#Carrega valor no display
+tmp(149) := "0101100100000";	-- STA @288
+--#Setando limite (dezenas):
+tmp(150) := "0100000000010";	-- LDI $2              	#Carrega o acumulador com o valor 2
+tmp(151) := "0101100000000";	-- STA @256            	#Armazena 2 no LDR0 até LDR7 (mostrando dezenas)
+tmp(152) := "0000000000000";	-- NOP 	#SET_DEZENA
+tmp(153) := "0001101100001";	-- LDA @353            	#Armazena o valor lido no KEY1 (ler KEY1)
+tmp(154) := "1011000000001";	-- ANDI @1             	#Utiliza mascara para limpar o valor lido do botao
+tmp(155) := "1000000001101";	-- CEQ @13             	#Compara o valor lido de KEY1 com 0 (zero esta salvo na posicao 13)
+tmp(156) := "0111010011000";	-- JEQ @SET_DEZENA     	#KEY1 nao foi apertado então faz o desvio (fica esperando)
+tmp(157) := "0101111111110";	-- STA @510            	#Limpando FF do KEY1
+tmp(158) := "0001101000000";	-- LDA @320            	#Armazena o valor lido nas chaves (ler SW0~SW7)
+tmp(159) := "1011000001111";	-- ANDI $15            	#Mascara para limpar valor
+--#Vê se valor da chave é maior que 10
+tmp(160) := "1001011011010";	-- JSR @CHECK_LIMIT
+tmp(161) := "0101000000111";	-- STA @7              	#Armazena o valor do acumulador no espaco das dezenas do limite
+--#Carrega valor no display
+tmp(162) := "0101100100001";	-- STA @289
+--#Setando limite (centenas):
+tmp(163) := "0100000000100";	-- LDI $4              	#Carrega o acumulador com o valor 4
+tmp(164) := "0101100000000";	-- STA @256            	#Armazena 1 no LDR0 até LDR7 (mostrando centenas)
+tmp(165) := "0000000000000";	-- NOP 	#SET_CENTENA
+tmp(166) := "0001101100001";	-- LDA @353            	#Armazena o valor lido no KEY1 (ler KEY1)
+tmp(167) := "1011000000001";	-- ANDI @1             	#Utiliza mascara para limpar o valor lido do botao
+tmp(168) := "1000000001101";	-- CEQ @13             	#Compara o valor lido de KEY1 com 0 (zero esta salvo na posicao 13)
+tmp(169) := "0111010100101";	-- JEQ @SET_CENTENA    	#KEY1 nao foi apertado então faz o desvio (fica esperando)
+tmp(170) := "0101111111110";	-- STA @510            	#Limpando FF do KEY1
+tmp(171) := "0001101000000";	-- LDA @320            	#Armazena o valor lido nas chaves (ler SW0~SW7)
+tmp(172) := "1011000001111";	-- ANDI $15            	#Mascara para limpar valor
+--#Vê se valor da chave é maior que 10
+tmp(173) := "1001011011010";	-- JSR @CHECK_LIMIT
+tmp(174) := "0101000001000";	-- STA @8              	#Armazena o valor do acumulador no espaco das centenas do limite
+--#Carrega valor no display
+tmp(175) := "0101100100010";	-- STA @290
+--#Setando limite (milhares):
+tmp(176) := "0100000001000";	-- LDI $8              	#Carrega o acumulador com o valor 8
+tmp(177) := "0101100000000";	-- STA @256            	#Armazena 1 no LDR0 até LDR7 (mostrando milhares)
+tmp(178) := "0000000000000";	-- NOP 	#SET_MILHAR
+tmp(179) := "0001101100001";	-- LDA @353            	#Armazena o valor lido no KEY1 (ler KEY1)
+tmp(180) := "1011000000001";	-- ANDI @1             	#Utiliza mascara para limpar o valor lido do botao
+tmp(181) := "1000000001101";	-- CEQ @13             	#Compara o valor lido de KEY1 com 0 (zero esta salvo na posicao 13)
+tmp(182) := "0111010110010";	-- JEQ @SET_MILHAR     	#KEY1 nao foi apertado então faz o desvio (fica esperando)
+tmp(183) := "0101111111110";	-- STA @510            	#Limpando FF do KEY11
+tmp(184) := "0001101000000";	-- LDA @320            	#Armazena o valor lido nas chaves (ler SW0~SW7)
+tmp(185) := "1011000001111";	-- ANDI $15            	#Mascara para limpar valor
+--#Vê se valor da chave é maior que 10
+tmp(186) := "1001011011010";	-- JSR @CHECK_LIMIT
+tmp(187) := "0101000001001";	-- STA @9              	#Armazena o valor do acumulador no espaco das milhares do limite
+--#Carrega valor no display
+tmp(188) := "0101100100011";	-- STA @291
+--#Setando limite (dezenas de milhares):
+tmp(189) := "0100000010000";	-- LDI $16             	#Carrega o acumulador com o valor 16
+tmp(190) := "0101100000000";	-- STA @256            	#Armazena 1 no LDR0 até LDR7 (mostrando dezenas de milhares)
+tmp(191) := "0000000000000";	-- NOP 	#SET_DEZMILHAR
+tmp(192) := "0001101100001";	-- LDA @353            	#Armazena o valor lido no KEY1 (ler KEY1)
+tmp(193) := "1011000000001";	-- ANDI @1             	#Utiliza mascara para limpar o valor lido do botao
+tmp(194) := "1000000001101";	-- CEQ @13             	#Compara o valor lido de KEY1 com 0 (zero esta salvo na posicao 13)
+tmp(195) := "0111010111111";	-- JEQ @SET_DEZMILHAR  	#KEY1 nao foi apertado então faz o desvio (fica esperando)
+tmp(196) := "0101111111110";	-- STA @510            	#Limpando FF do KEY1
+tmp(197) := "0001101000000";	-- LDA @320            	#Armazena o valor lido nas chaves (ler SW0~SW7)
+tmp(198) := "1011000001111";	-- ANDI $15            	#Mascara para limpar valor
+--#Vê se valor da chave é maior que 10
+tmp(199) := "1001011011010";	-- JSR @CHECK_LIMIT
+tmp(200) := "0101000001010";	-- STA @10             	#Armazena o valor do acumulador no espaco das dezenas de milhares do limite
+--#Carrega valor no display
+tmp(201) := "0101100100100";	-- STA @292
+--#Setando limite (centenas de milhares):
+tmp(202) := "0100000100000";	-- LDI $32             	#Carrega o acumulador com o valor 16
+tmp(203) := "0101100000000";	-- STA @256            	#Armazena 1 no LDR0 até LDR7 (mostrando centenas de milhares)
+tmp(204) := "0000000000000";	-- NOP 	#SET_CENMILHAR
+tmp(205) := "0001101100001";	-- LDA @353            	#Armazena o valor lido no KEY1 (ler KEY1)
+tmp(206) := "1011000000001";	-- ANDI @1             	#Utiliza mascara para limpar o valor lido do botao
+tmp(207) := "1000000001101";	-- CEQ @13             	#Compara o valor lido de KEY1 com 0 (zero esta salvo na posicao 13)
+tmp(208) := "0111011001100";	-- JEQ @SET_CENMILHAR  	#KEY1 nao foi apertado então faz o desvio (fica esperando)
+tmp(209) := "0101111111110";	-- STA @510            	#Limpando FF do KEY1
+tmp(210) := "0001101000000";	-- LDA @320            	#Armazena o valor lido nas chaves (ler SW0~SW7)
+tmp(211) := "1011000001111";	-- ANDI $15            	#Mascara para limpar valor
+--#Vê se valor da chave é maior que 10
+tmp(212) := "1001011011010";	-- JSR @CHECK_LIMIT
+tmp(213) := "0101000001011";	-- STA @11             	#Armazena o valor do acumulador no espaco das centenas de milhares do limite
+--#Carrega valor no display
+tmp(214) := "0101100100101";	-- STA @293
+tmp(215) := "0100000000001";	-- LDI $1              	#Carrega o acumulador com o valor 2
+tmp(216) := "0101100000000";	-- STA @256            	#Armazena 2 no LDR0 até LDR7 (mostrando dezenas)
+tmp(217) := "0110000111100";	-- JMP @CHECK_RESET
+--# Subrotina para verificar se limite de uma casa
+tmp(218) := "0000000000000";	-- NOP 	#CHECK_LIMIT
+tmp(219) := "1000000010000";	-- CEQ @16
+tmp(220) := "0111011101001";	-- JEQ @SET_9
+tmp(221) := "1000000010001";	-- CEQ @17
+tmp(222) := "0111011101001";	-- JEQ @SET_9
+tmp(223) := "1000000010010";	-- CEQ @18
+tmp(224) := "0111011101001";	-- JEQ @SET_9
+tmp(225) := "1000000010011";	-- CEQ @19
+tmp(226) := "0111011101001";	-- JEQ @SET_9
+tmp(227) := "1000000010100";	-- CEQ @20
+tmp(228) := "0111011101001";	-- JEQ @SET_9
+tmp(229) := "1000000010101";	-- CEQ @21
+tmp(230) := "0111011101001";	-- JEQ @SET_9
+tmp(231) := "0000000000000";	-- NOP 	#VOLTA
+tmp(232) := "1010000000000";	-- RET
+tmp(233) := "0000000000000";	-- NOP 	#SET_9
+tmp(234) := "0100000001001";	-- LDI @9
+tmp(235) := "0110011100111";	-- JMP @VOLTA
+tmp(236) := "0000000000000";	-- NOP 	#VERIFICA_LIMITE
+--# Comparação das unidades
+tmp(237) := "0001000000000";	-- LDA @0
+tmp(238) := "1000000000110";	-- CEQ @6
+tmp(239) := "0111011110001";	-- JEQ @VERIFICA_DEZ
+tmp(240) := "1010000000000";	-- RET
+tmp(241) := "0000000000000";	-- NOP 	#VERIFICA_DEZ
+tmp(242) := "0001000000001";	-- LDA @1
+tmp(243) := "1000000000111";	-- CEQ @7
+tmp(244) := "0111011110110";	-- JEQ @VERIFICA_CEN
+tmp(245) := "1010000000000";	-- RET
+tmp(246) := "0000000000000";	-- NOP 	#VERIFICA_CEN
+tmp(247) := "0001000000010";	-- LDA @2
+tmp(248) := "1000000001000";	-- CEQ @8
+tmp(249) := "0111011111011";	-- JEQ @VERIFICA_MIL
+tmp(250) := "1010000000000";	-- RET
+tmp(251) := "0000000000000";	-- NOP 	#VERIFICA_MIL
+tmp(252) := "0001000000011";	-- LDA @3
+tmp(253) := "1000000001001";	-- CEQ @9
+tmp(254) := "0111100000000";	-- JEQ @VERIFICA_DEZ_MIL
+tmp(255) := "1010000000000";	-- RET
+tmp(256) := "0000000000000";	-- NOP 	#VERIFICA_DEZ_MIL
+tmp(257) := "0001000000100";	-- LDA @4
+tmp(258) := "1000000001010";	-- CEQ @10
+tmp(259) := "0111100000101";	-- JEQ @VERIFICA_CEN_MIL
+tmp(260) := "1010000000000";	-- RET
+tmp(261) := "0000000000000";	-- NOP 	#VERIFICA_CEN_MIL
+tmp(262) := "0001000000101";	-- LDA @5
+tmp(263) := "1000000001011";	-- CEQ @11
+tmp(264) := "0111100001010";	-- JEQ @LIMITE_ATINGIDO
+tmp(265) := "1010000000000";	-- RET
+tmp(266) := "0000000000000";	-- NOP 	#LIMITE_ATINGIDO
+--# Liga LED9 (de limite atingido)
+tmp(267) := "0100000000001";	-- LDI $1
+tmp(268) := "0101100000010";	-- STA @258
+--# Ativa flag de inibição de contagem
+tmp(269) := "0101000001111";	-- STA @15
+tmp(270) := "0110000110000";	-- JMP @INICIO

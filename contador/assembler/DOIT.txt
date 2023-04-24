@@ -1,0 +1,382 @@
+# Setup
+SETUP:
+# Zerando os displays de sete segmentos
+LDI $0      #Carrega o acumulador com o valor 0
+STA @288    #Armazena o valor do acumulador em HEX0
+STA @289    #Armazena o valor do acumulador em HEX1
+STA @290    #Armazena o valor do acumulador em HEX2
+STA @291    #Armazena o valor do acumulador em HEX3
+STA @292    #Armazena o valor do acumulador em HEX4
+STA @293    #Armazena o valor do acumulador em HEX5
+
+#Limpar os botoes (rst do FF)
+STA @511   #Limpando FF do KEY0
+STA @510   #Limpando FF do KEY1
+STA @509   #Limpando FF do KEY2
+STA @508   #Limpando FF do KEY3
+
+#Inicializando as variaveis do display
+STA @0     #Armazena o valor do acumulador em MEM[0] (unidades)
+STA @1     #Armazena o valor do acumulador em MEM[1] (dezenas)
+STA @2     #Armazena o valor do acumulador em MEM[2] (centenas)
+STA @3     #Armazena o valor do acumulador em MEM[3] (milhares)
+STA @4     #Armazena o valor do acumulador em MEM[4] (dezenas de milhares)
+STA @5     #Armazena o valor do acumulador em MEM[5] (centenas de milhares)
+
+#Setando a flag de contagem
+STA @15   #Armazena o valor do acumulador em MEM[15] (flag)
+
+#Apagando os LEDs
+STA @257    #Armazena o valor do bit0 do acumulador no LDR8 (indica Overflow)
+STA @258    #Armazena o valor do bit0 do acumulador no LDR9 (indica Limite Atingido)
+LDI $1     
+STA @256    #Armazena o valor do acumulador no LDR0 ~ LDR7
+
+#Inicializando as variaveis do limite
+LDI $9     #Carrega o acumulador com o valor 9
+STA @6     #Armazena o valor do acumulador em MEM[6] (unidades)
+STA @7     #Armazena o valor do acumulador em MEM[7] (dezenas)
+STA @8     #Armazena o valor do acumulador em MEM[8] (centenas)
+STA @9     #Armazena o valor do acumulador em MEM[9] (milhares)
+STA @10    #Armazena o valor do acumulador em MEM[10] (dezenas de milhares)
+STA @11    #Armazena o valor do acumulador em MEM[11] (centenas de milhares)
+
+#Salvando variaveis utilizadas em comparacoes
+LDI $10    #Carrega o acumulador com o valor 10 para fzer incrementos
+STA @12    #Armazena o valor do acumulador em MEM[12] (valor para comparacao limite da faixa a ser exibida)
+LDI $0     #Carrega o acumulador com o valor 0 para fazer comparacao com o botao
+STA @13    #Armazena o valor do acumulador em MEM[13] (valor para comparacao do aperto do botao)
+LDI $1     #Carrega o acumulador com o valor 1 para fazer comparacao com o botao
+STA @14    #Armazena o valor do acumulador em MEM[14] (valor para comparacao do aperto do botao)
+# Armazena 10 em MEM[16]
+LDI $10
+STA @16
+# Armazena 11 em MEM[17]
+LDI $11
+STA @17
+# Armazena 12 em MEM[18]
+LDI $12
+STA @18
+# Armazena 13 em MEM[19]
+LDI $13
+STA @19
+# Armazena 14 em MEM[20]
+LDI $14
+STA @20
+# Armazena 15 em MEM[21]
+LDI $15
+STA @21
+
+INICIO:
+# Ler o botão de incremento de contagem (KEY0):
+LDA @352                # Lê KEY0
+ANDI $1                 # Limpa KEY0
+# Caso tenha sido pressionado, desviar para a sub-rotina de incremento de valor.
+CEQ @13                 # Compara valor com 0 (MEM[13])
+JEQ @CHECK_KEY1         # Caso não tenha sido apertado, checa KEY1
+JSR @INCREMENTA         # Se for apertado (KEY0=1), pula pra INCREMENTA
+
+CHECK_KEY1:
+# Ler o botão de configuração do limite de incremento (KEY1):
+LDA @353
+ANDI $1
+# Caso não esteja pressionado, verifica FPGA_RESET
+CEQ @13
+JEQ @CHECK_RESET
+# Caso esteja pressionado, vai para sub-rotina de checar limite
+JMP @SET_LIMIT
+CHECK_RESET:
+# Ler o botão de reiniciar contagem (FPGA_RESET):
+LDA @356
+ANDI $1
+# Caso esteja pressionado, desviar para a sub-rotina de reiniciar contagem.
+CEQ @13
+JEQ @SETUP
+
+# Escrever os valores das variáveis nos respectivos displays (pode ser uma sub-rotina).
+JSR @DISPLAY
+
+JSR @VERIFICA_LIMITE
+
+# Desviar para o **INÍCIO**.
+JMP @INICIO
+
+# -----------------------------------------------------
+# SUBROTINAS
+
+DISPLAY:
+# Carrega valor de memória de cada unidade
+# e os mostra no display
+LDA @0                  
+STA @288
+LDA @1
+STA @289
+LDA @2                  
+STA @290
+LDA @3                  
+STA @291
+LDA @4                 
+STA @292
+LDA @5 
+STA @293
+RET
+
+INCREMENTA:
+
+STA @511                # Limpa FF de KEY0
+
+# Verificando flag inibição de contagem
+LDA @15                 #Carrega valor flag
+CEQ @14                 #Compara com 1  (FALSE)
+JEQ @INICIO
+
+#INC_UNIDADE:
+LDA @0                  # Carrega valor das unidades
+INC                     # Incrementa valor
+# Checa se ultrapassou 10
+CEQ @12
+JEQ @INC_DEZENA
+# Caso contrário, carrega novo valor
+STA @0                  # Carrega novo valor da unidade (MEM[0])
+RET
+
+INC_DEZENA:
+# Reseta valor da unidade
+LDI $0
+STA @0
+LDA @1
+INC
+CEQ @12
+JEQ @INC_CENTENA
+STA @1
+RET
+
+INC_CENTENA:
+# Reseta valor da unidade
+LDI $0
+STA @1
+LDA @2
+INC
+CEQ @12
+JEQ @INC_MILHAR
+STA @2
+RET
+
+INC_MILHAR:
+# Reseta valor da unidade
+LDI $0
+STA @2
+LDA @3
+INC
+CEQ @12
+JEQ @INC_DEZ_MILHAR
+STA @3
+RET
+
+INC_DEZ_MILHAR:
+# Reseta valor da unidade
+LDI $0
+STA @3
+LDA @4
+INC
+CEQ @12
+JEQ @INC_CEN_MILHAR
+STA @4
+RET
+
+INC_CEN_MILHAR:
+# Reseta valor da unidade
+LDI $0
+STA @4
+LDA @5
+INC
+CEQ @12
+JEQ @OVERFLOW
+STA @5
+RET
+
+OVERFLOW:
+LDI $1
+STA @15
+LDA @257
+RET
+
+SET_LIMIT:
+#Setando limite (unidade):
+STA @510            #Limpa FF da KEY1
+LDA @320            #Armazena o valor lido nas chaves (ler SW0~SW7)
+ANDI $15            #Mascara para limpar valor
+
+#Vê se valor da chave é maior que 10
+JSR @CHECK_LIMIT
+
+STA @6
+
+#Carrega valor no display
+STA @288
+
+#Setando limite (dezenas):
+LDI $2              #Carrega o acumulador com o valor 2
+STA @256            #Armazena 2 no LDR0 até LDR7 (mostrando dezenas)
+SET_DEZENA:
+LDA @353            #Armazena o valor lido no KEY1 (ler KEY1)
+ANDI @1             #Utiliza mascara para limpar o valor lido do botao
+CEQ @13             #Compara o valor lido de KEY1 com 0 (zero esta salvo na posicao 13)
+JEQ @SET_DEZENA     #KEY1 nao foi apertado então faz o desvio (fica esperando)
+
+STA @510            #Limpando FF do KEY1
+LDA @320            #Armazena o valor lido nas chaves (ler SW0~SW7)
+ANDI $15            #Mascara para limpar valor
+#Vê se valor da chave é maior que 10
+JSR @CHECK_LIMIT
+STA @7              #Armazena o valor do acumulador no espaco das dezenas do limite
+
+#Carrega valor no display
+STA @289
+
+#Setando limite (centenas):
+LDI $4              #Carrega o acumulador com o valor 4
+STA @256            #Armazena 1 no LDR0 até LDR7 (mostrando centenas)
+SET_CENTENA:
+LDA @353            #Armazena o valor lido no KEY1 (ler KEY1)
+ANDI @1             #Utiliza mascara para limpar o valor lido do botao
+CEQ @13             #Compara o valor lido de KEY1 com 0 (zero esta salvo na posicao 13)
+JEQ @SET_CENTENA    #KEY1 nao foi apertado então faz o desvio (fica esperando)
+
+STA @510            #Limpando FF do KEY1
+LDA @320            #Armazena o valor lido nas chaves (ler SW0~SW7)
+ANDI $15            #Mascara para limpar valor
+#Vê se valor da chave é maior que 10
+JSR @CHECK_LIMIT
+STA @8              #Armazena o valor do acumulador no espaco das centenas do limite
+
+#Carrega valor no display
+STA @290
+
+#Setando limite (milhares):
+LDI $8              #Carrega o acumulador com o valor 8
+STA @256            #Armazena 1 no LDR0 até LDR7 (mostrando milhares)
+SET_MILHAR:
+LDA @353            #Armazena o valor lido no KEY1 (ler KEY1)
+ANDI @1             #Utiliza mascara para limpar o valor lido do botao
+CEQ @13             #Compara o valor lido de KEY1 com 0 (zero esta salvo na posicao 13)
+JEQ @SET_MILHAR     #KEY1 nao foi apertado então faz o desvio (fica esperando)
+
+STA @510            #Limpando FF do KEY11
+LDA @320            #Armazena o valor lido nas chaves (ler SW0~SW7)
+ANDI $15            #Mascara para limpar valor
+#Vê se valor da chave é maior que 10
+JSR @CHECK_LIMIT
+STA @9              #Armazena o valor do acumulador no espaco das milhares do limite
+
+#Carrega valor no display
+STA @291
+
+#Setando limite (dezenas de milhares):
+LDI $16             #Carrega o acumulador com o valor 16
+STA @256            #Armazena 1 no LDR0 até LDR7 (mostrando dezenas de milhares)
+SET_DEZMILHAR:
+LDA @353            #Armazena o valor lido no KEY1 (ler KEY1)
+ANDI @1             #Utiliza mascara para limpar o valor lido do botao
+CEQ @13             #Compara o valor lido de KEY1 com 0 (zero esta salvo na posicao 13)
+JEQ @SET_DEZMILHAR  #KEY1 nao foi apertado então faz o desvio (fica esperando)
+
+STA @510            #Limpando FF do KEY1
+LDA @320            #Armazena o valor lido nas chaves (ler SW0~SW7)
+ANDI $15            #Mascara para limpar valor
+#Vê se valor da chave é maior que 10
+JSR @CHECK_LIMIT
+STA @10             #Armazena o valor do acumulador no espaco das dezenas de milhares do limite
+
+#Carrega valor no display
+STA @292
+
+#Setando limite (centenas de milhares):
+LDI $32             #Carrega o acumulador com o valor 16
+STA @256            #Armazena 1 no LDR0 até LDR7 (mostrando centenas de milhares)
+SET_CENMILHAR:
+LDA @353            #Armazena o valor lido no KEY1 (ler KEY1)
+ANDI @1             #Utiliza mascara para limpar o valor lido do botao
+CEQ @13             #Compara o valor lido de KEY1 com 0 (zero esta salvo na posicao 13)
+JEQ @SET_CENMILHAR  #KEY1 nao foi apertado então faz o desvio (fica esperando)
+
+STA @510            #Limpando FF do KEY1
+LDA @320            #Armazena o valor lido nas chaves (ler SW0~SW7)
+ANDI $15            #Mascara para limpar valor
+#Vê se valor da chave é maior que 10
+JSR @CHECK_LIMIT
+STA @11             #Armazena o valor do acumulador no espaco das centenas de milhares do limite
+
+#Carrega valor no display
+STA @293
+
+LDI $1              #Carrega o acumulador com o valor 2
+STA @256            #Armazena 2 no LDR0 até LDR7 (mostrando dezenas)
+
+JMP @CHECK_RESET
+
+# Subrotina para verificar se limite de uma casa
+CHECK_LIMIT:
+CEQ @16
+JEQ @SET_9
+CEQ @17
+JEQ @SET_9
+CEQ @18
+JEQ @SET_9
+CEQ @19
+JEQ @SET_9
+CEQ @20
+JEQ @SET_9
+CEQ @21
+JEQ @SET_9
+VOLTA:
+RET
+
+SET_9:
+LDI @9
+JMP @VOLTA
+
+VERIFICA_LIMITE:
+# Comparação das unidades
+LDA @0
+CEQ @6
+JEQ @VERIFICA_DEZ
+RET
+
+VERIFICA_DEZ:
+LDA @1
+CEQ @7
+JEQ @VERIFICA_CEN
+RET
+
+VERIFICA_CEN:
+LDA @2
+CEQ @8
+JEQ @VERIFICA_MIL
+RET
+
+VERIFICA_MIL:
+LDA @3
+CEQ @9
+JEQ @VERIFICA_DEZ_MIL
+RET
+
+VERIFICA_DEZ_MIL:
+LDA @4
+CEQ @10
+JEQ @VERIFICA_CEN_MIL
+RET
+
+VERIFICA_CEN_MIL:
+LDA @5
+CEQ @11
+JEQ @LIMITE_ATINGIDO
+RET
+
+LIMITE_ATINGIDO:
+# Liga LED9 (de limite atingido)
+LDI $1
+STA @258
+# Ativa flag de inibição de contagem
+STA @15
+JMP @INICIO

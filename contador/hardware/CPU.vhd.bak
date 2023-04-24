@@ -1,0 +1,158 @@
+library ieee;
+use ieee.std_logic_1164.all;
+
+entity CPU is
+  -- Total de bits das entradas e saidas
+  generic ( larguraDados : natural := 8;
+		  larguraEnderecoRAM : natural := 8;
+		  larguraEnderecoROM : natural := 9;
+        simulacao : boolean := TRUE -- para gravar na placa, altere de TRUE para FALSE
+  );
+  port   (
+    CLOCK_50 : in std_logic;
+    KEY: in std_logic_vector(3 downto 0);
+    SW: in std_logic_vector(9 downto 0);
+	PC_OUT: out std_logic_vector(larguraEnderecoROM-1 downto 0);
+    LEDR  : out std_logic_vector(9 downto 0);
+	 TestSaida_ROM : out std_logic_vector(12 downto 0);
+	 Palavra_controle : out std_logic_vector(11 downto 0)
+  );
+end entity;
+
+
+architecture arquitetura of CPU is
+
+  signal sainda_MUX : std_logic_vector (larguraDados-1 downto 0);
+  signal MUX_Memoria : std_logic_vector (larguraDados-1 downto 0);
+  signal REGA_Saida : std_logic_vector (larguraDados-1 downto 0);
+  signal Saida_ULA : std_logic_vector (larguraDados-1 downto 0);
+  signal Sinais_Controle : std_logic_vector (11 downto 0);
+  signal Endereco : std_logic_vector (larguraEnderecoROM - 1 downto 0);
+  signal proxPC : std_logic_vector (larguraEnderecoROM -1 downto 0);
+  signal Chave_Operacao_ULA : std_logic;
+  signal CLK : std_logic;
+  signal SelMUX : std_logic;
+  signal SelMUX_PC : std_logic_vector (1 downto 0);
+  signal Habilita_A : std_logic;
+  signal Reset_A : std_logic;
+  signal Operacao_ULA : std_logic_vector (1 downto 0);
+  signal Hab_LeituraMemoria : std_logic;
+  signal Hab_EscritaMemoria : std_logic;
+  signal Saida_MemoriaInst : std_logic_vector (12 downto 0);
+  signal saida_MUX_PC : std_logic_vector (larguraEnderecoROM-1 downto 0);
+  signal Ender_Retorno : std_logic_vector (larguraEnderecoROM-1 downto 0);
+  signal Flag : std_logic;
+  signal Flag_Result : std_logic;
+  signal HabEcrita_Retorno : std_logic;
+
+begin
+
+-- Instanciando os componentes:
+
+-- Para simular, fica mais simples tirar o edgeDetector
+gravar:  if simulacao generate
+CLK <= KEY(0);
+else generate
+detectorSub0: work.edgeDetector(bordaSubida)
+        port map (clk => CLOCK_50, entrada => (not KEY(0)), saida => CLK);
+end generate;
+
+-- BUSCA DE INSTRUCAO
+
+-- Memoria Instrucao
+ROM1 : entity work.memoriaROM   generic map (dataWidth => 13, addrWidth => larguraEnderecoROM)
+          port map (Endereco => Endereco, Dado => Saida_MemoriaInst);
+
+-- Program Counter.
+PC : entity work.registradorGenerico   generic map (larguraDados => larguraEnderecoROM)
+          port map (DIN => saida_MUX_PC, DOUT => Endereco, ENABLE => '1', CLK => CLK, RST => '0');
+
+-- Incrementa a linha da memoria ROM			 
+incrementaPC :  entity work.somaConstante  generic map (larguraDados => larguraEnderecoROM, constante => 1)
+        port map( entrada => Endereco, saida => proxPC);
+		  
+
+--  MUX de selecao de endereco memoria.
+MUXProxPC :  entity work.muxGenerico4x1  generic map (larguraDados => larguraEnderecoROM)
+        port map( entradaA_MUX => proxPC,
+                 entradaB_MUX =>  Saida_MemoriaInst(8 downto 0),
+					  entradaC_MUX => Ender_Retorno,
+					  entradaD_MUX =>  "000000000",
+                 seletor_MUX => SelMUX_PC,
+                 saida_MUX => saida_MUX_PC);
+					  
+-- Endereco Retorno.
+ENDRetorno: entity work.registradorGenerico   generic map (larguraDados => larguraEnderecoROM)
+          port map (DIN => proxPC, DOUT => Ender_Retorno, ENABLE => HabEcrita_Retorno, CLK => CLK, RST => '0');
+			 
+
+-- Logica de Desvio
+LOGICDESVIO : entity work.logicaDesvio
+          port map (flag => Flag_Result, jeq => Sinais_Controle(7), jsr => Sinais_Controle(8), ret => Sinais_Controle(9), jmp => Sinais_Controle(10), selmux=> SelMUX_PC);			 
+
+			 
+-- DECODIFICACAO
+
+
+-- Decotificador de instrucao
+DECODER : entity work.decoderInstru
+          port map (opcode => Saida_MemoriaInst(12 downto 9), saida => Sinais_Controle);
+			 
+
+-- Mux de valor imediato, endereco RAM e destino JMP.
+MUX1 :  entity work.muxGenerico2x1  generic map (larguraDados => larguraDados)
+        port map( entradaA_MUX => MUX_Memoria,
+                 entradaB_MUX =>  Saida_MemoriaInst(7 downto 0),
+                 seletor_MUX => SelMUX,
+                 saida_MUX => sainda_MUX);
+					  
+					  
+-- EXECUCAO 
+
+-- ULA:
+ULA1 : entity work.ULASomaSub  generic map(larguraDados => larguraDados)
+          port map (entradaA => REGA_Saida, entradaB => sainda_MUX, saida => Saida_ULA, flag => Flag, seletor => Operacao_ULA);
+			 
+
+-- Acumulador.
+REGA : entity work.registradorGenerico   generic map (larguraDados => larguraDados)
+          port map (DIN => Saida_ULA, DOUT => REGA_Saida, ENABLE => Habilita_A, CLK => CLK, RST => '0');
+
+
+			 
+-- ESCRITA E LEITURA MEMORIA		 
+
+RAM : entity work.memoriaRAM   generic map (dataWidth => larguraDados, addrWidth => larguraEnderecoRAM)
+          port map (addr => Saida_MemoriaInst(7 downto 0), we => Sinais_Controle(0), re => Sinais_Controle(1), habilita  => Saida_MemoriaInst(8), dado_in => REGA_Saida, dado_out => MUX_Memoria, clk => CLK);
+
+
+-- O port map completo do Acumulador de comparação.
+FLAG1 : entity work.FlipFlop
+          port map (DIN => Flag, DOUT => Flag_Result, ENABLE => Sinais_Controle(2), CLK => CLK, RST => '0');
+
+
+
+			 
+
+HabEcrita_Retorno <= Sinais_Controle(11);
+selMUX <= Sinais_Controle(6);
+Habilita_A <= Sinais_Controle(5);
+Operacao_ULA <= Sinais_Controle(4 downto 3);
+
+
+-- A ligacao dos LEDs:
+--LEDR (9) <= SelMUX;
+--LEDR (8) <= Habilita_A;
+--LEDR (7) <= Reset_A;
+--LEDR (6) <= Operacao_ULA(1);
+--LEDR (5) <= Operacao_ULA(0);
+--LEDR (4) <= '0';    -- Apagado.
+LEDR (7 downto 0) <= REGA_Saida;
+
+PC_OUT <= Endereco;
+
+TestSaida_ROM <= Saida_MemoriaInst;
+
+Palavra_controle <= Sinais_Controle;
+
+end architecture;
